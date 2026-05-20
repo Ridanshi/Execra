@@ -14,6 +14,7 @@ a fitted model either call ``detector.fit(traces)`` or
 Model persistence is tested using ``tmp_path`` (pytest's temporary
 directory fixture) so no real files are left behind.
 """
+
 from __future__ import annotations
 
 import os
@@ -22,6 +23,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from sklearn.ensemble import IsolationForest
 
 from core.intelligence.trace_anomaly_detector import (
     FEATURE_NAMES,
@@ -31,12 +33,13 @@ from core.intelligence.trace_anomaly_detector import (
     _build_baseline_data,
     _extract_features,
     _score_to_match,
+    _validate_model,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def detector() -> TraceAnomalyDetector:
@@ -49,7 +52,7 @@ def fitted_detector() -> TraceAnomalyDetector:
     """Detector fitted on synthetic baseline — ready for inference."""
     d = TraceAnomalyDetector(
         contamination=0.1,
-        n_estimators=10,   # small ensemble for test speed
+        n_estimators=10,  # small ensemble for test speed
         random_state=42,
         auto_load=False,
     )
@@ -76,7 +79,7 @@ def normal_trace() -> ExecutionTrace:
 def anomalous_trace() -> ExecutionTrace:
     """A clearly anomalous trace — extreme outlier on every feature."""
     return ExecutionTrace(
-        duration_ms=50_000.0,   # 50 s — far above baseline mean of 500 ms
+        duration_ms=50_000.0,  # 50 s — far above baseline mean of 500 ms
         cpu_percent=99.0,
         memory_mb=5_000.0,
         error_count=50,
@@ -91,9 +94,16 @@ def anomalous_trace() -> ExecutionTrace:
 def sample_traces() -> list[ExecutionTrace]:
     """Small list of realistic traces for fit() tests."""
     return [
-        ExecutionTrace(duration_ms=d, cpu_percent=10 + i, memory_mb=190 + i * 5,
-                       error_count=0, warning_count=i % 2, step_count=5,
-                       llm_latency_ms=750 + i * 10, rule_match_count=1)
+        ExecutionTrace(
+            duration_ms=d,
+            cpu_percent=10 + i,
+            memory_mb=190 + i * 5,
+            error_count=0,
+            warning_count=i % 2,
+            step_count=5,
+            llm_latency_ms=750 + i * 10,
+            rule_match_count=1,
+        )
         for i, d in enumerate(range(450, 560, 10))
     ]
 
@@ -101,6 +111,7 @@ def sample_traces() -> list[ExecutionTrace]:
 # ---------------------------------------------------------------------------
 # ExecutionTrace
 # ---------------------------------------------------------------------------
+
 
 class TestExecutionTrace:
     def test_default_construction(self):
@@ -123,8 +134,14 @@ class TestExecutionTrace:
 
     def test_all_fields_present(self):
         expected = {
-            "duration_ms", "cpu_percent", "memory_mb", "error_count",
-            "warning_count", "step_count", "llm_latency_ms", "rule_match_count",
+            "duration_ms",
+            "cpu_percent",
+            "memory_mb",
+            "error_count",
+            "warning_count",
+            "step_count",
+            "llm_latency_ms",
+            "rule_match_count",
         }
         t = ExecutionTrace()
         assert set(vars(t).keys()) == expected
@@ -133,6 +150,7 @@ class TestExecutionTrace:
 # ---------------------------------------------------------------------------
 # AnomalyResult
 # ---------------------------------------------------------------------------
+
 
 class TestAnomalyResult:
     def test_execution_trace_match_in_range(self):
@@ -155,6 +173,7 @@ class TestAnomalyResult:
 
     def test_sklearn_version_populated(self):
         import sklearn
+
         r = AnomalyResult(
             is_anomaly=False,
             anomaly_score=0.05,
@@ -167,6 +186,7 @@ class TestAnomalyResult:
 # ---------------------------------------------------------------------------
 # _extract_features
 # ---------------------------------------------------------------------------
+
 
 class TestExtractFeatures:
     def test_returns_correct_shape(self, normal_trace):
@@ -183,23 +203,29 @@ class TestExtractFeatures:
 
     def test_feature_order_matches_names(self):
         t = ExecutionTrace(
-            duration_ms=1.0, cpu_percent=2.0, memory_mb=3.0,
-            error_count=4, warning_count=5, step_count=6,
-            llm_latency_ms=7.0, rule_match_count=8,
+            duration_ms=1.0,
+            cpu_percent=2.0,
+            memory_mb=3.0,
+            error_count=4,
+            warning_count=5,
+            step_count=6,
+            llm_latency_ms=7.0,
+            rule_match_count=8,
         )
         features = _extract_features(t)
-        assert features[0] == 1.0   # duration_ms
-        assert features[1] == 2.0   # cpu_percent
-        assert features[2] == 3.0   # memory_mb
-        assert features[3] == 4.0   # error_count
-        assert features[4] == 5.0   # warning_count
-        assert features[5] == 6.0   # step_count
-        assert features[6] == 7.0   # llm_latency_ms
-        assert features[7] == 8.0   # rule_match_count
+        assert features[0] == 1.0  # duration_ms
+        assert features[1] == 2.0  # cpu_percent
+        assert features[2] == 3.0  # memory_mb
+        assert features[3] == 4.0  # error_count
+        assert features[4] == 5.0  # warning_count
+        assert features[5] == 6.0  # step_count
+        assert features[6] == 7.0  # llm_latency_ms
+        assert features[7] == 8.0  # rule_match_count
 
     def test_integer_fields_cast_to_float(self):
-        t = ExecutionTrace(error_count=3, warning_count=7, step_count=4,
-                           rule_match_count=2)
+        t = ExecutionTrace(
+            error_count=3, warning_count=7, step_count=4, rule_match_count=2
+        )
         features = _extract_features(t)
         assert isinstance(features[3], (float, np.floating))  # error_count
 
@@ -210,6 +236,7 @@ class TestExtractFeatures:
 # ---------------------------------------------------------------------------
 # _score_to_match
 # ---------------------------------------------------------------------------
+
 
 class TestScoreToMatch:
     def test_positive_score_above_half(self):
@@ -242,6 +269,7 @@ class TestScoreToMatch:
 # ---------------------------------------------------------------------------
 # _build_baseline_data
 # ---------------------------------------------------------------------------
+
 
 class TestBuildBaselineData:
     def test_output_shape(self):
@@ -277,6 +305,7 @@ class TestBuildBaselineData:
 # TraceAnomalyDetector — construction and state
 # ---------------------------------------------------------------------------
 
+
 class TestDetectorConstruction:
     def test_auto_load_false_leaves_unfitted(self, detector):
         assert not detector.is_fitted
@@ -294,6 +323,7 @@ class TestDetectorConstruction:
 
     def test_params_defaults_from_settings(self):
         from core.config import settings
+
         d = TraceAnomalyDetector(auto_load=False)
         assert d._contamination == settings.ANOMALY_CONTAMINATION
         assert d._n_estimators == settings.ANOMALY_N_ESTIMATORS
@@ -314,6 +344,7 @@ class TestDetectorConstruction:
 # ---------------------------------------------------------------------------
 # TraceAnomalyDetector — fit()
 # ---------------------------------------------------------------------------
+
 
 class TestDetectorFit:
     def test_empty_list_raises(self, detector):
@@ -339,6 +370,7 @@ class TestDetectorFit:
 # TraceAnomalyDetector — predict()
 # ---------------------------------------------------------------------------
 
+
 class TestDetectorPredict:
     def test_predict_requires_fitted_model(self, detector, normal_trace):
         with pytest.raises(RuntimeError, match="has not been fitted"):
@@ -358,8 +390,12 @@ class TestDetectorPredict:
 
     def test_predict_feature_values_match_input(self, fitted_detector, normal_trace):
         result = fitted_detector.predict(normal_trace)
-        assert result.feature_values["duration_ms"] == pytest.approx(normal_trace.duration_ms)
-        assert result.feature_values["error_count"] == pytest.approx(normal_trace.error_count)
+        assert result.feature_values["duration_ms"] == pytest.approx(
+            normal_trace.duration_ms
+        )
+        assert result.feature_values["error_count"] == pytest.approx(
+            normal_trace.error_count
+        )
 
     def test_normal_trace_has_positive_score(self, fitted_detector, normal_trace):
         """A trace matching baseline distributions should score close to normal."""
@@ -400,6 +436,7 @@ class TestDetectorPredict:
 # TraceAnomalyDetector — save() / load()
 # ---------------------------------------------------------------------------
 
+
 class TestDetectorPersistence:
     def test_save_unfitted_raises(self, detector, tmp_path):
         with pytest.raises(RuntimeError, match="unfitted"):
@@ -439,7 +476,9 @@ class TestDetectorPersistence:
         assert fresh.is_fitted
 
     def test_payload_contains_sklearn_version(self, fitted_detector, tmp_path):
-        import joblib, sklearn
+        import joblib
+        import sklearn
+
         path = str(tmp_path / "model.joblib")
         fitted_detector.save(path=path)
         payload = joblib.load(path)
@@ -447,6 +486,7 @@ class TestDetectorPersistence:
 
     def test_payload_contains_feature_names(self, fitted_detector, tmp_path):
         import joblib
+
         path = str(tmp_path / "model.joblib")
         fitted_detector.save(path=path)
         payload = joblib.load(path)
@@ -461,7 +501,10 @@ class TestDetectorPersistence:
         self, fitted_detector, tmp_path, caplog
     ):
         """A saved model with a different sklearn version triggers a warning."""
-        import joblib, logging
+        import logging
+
+        import joblib
+
         path = str(tmp_path / "old_model.joblib")
         # Manually write a payload with a fake old version
         payload = {
@@ -485,6 +528,7 @@ class TestDetectorPersistence:
 # ---------------------------------------------------------------------------
 # TraceAnomalyDetector — auto_load fallback behaviour
 # ---------------------------------------------------------------------------
+
 
 class TestDetectorAutoLoad:
     def test_auto_load_true_fits_baseline_when_no_file(self, tmp_path):
@@ -520,9 +564,11 @@ class TestDetectorAutoLoad:
 # Settings integration
 # ---------------------------------------------------------------------------
 
+
 class TestAnomalySettings:
     def test_defaults_present(self):
         from core.config import settings
+
         assert isinstance(settings.ANOMALY_CONTAMINATION, float)
         assert 0 < settings.ANOMALY_CONTAMINATION < 1
         assert isinstance(settings.ANOMALY_N_ESTIMATORS, int)
@@ -533,24 +579,28 @@ class TestAnomalySettings:
 
     def test_env_override_contamination(self):
         from core.config import Settings
+
         with patch.dict(os.environ, {"ANOMALY_CONTAMINATION": "0.05"}):
             s = Settings()
             assert s.ANOMALY_CONTAMINATION == pytest.approx(0.05)
 
     def test_env_override_n_estimators(self):
         from core.config import Settings
+
         with patch.dict(os.environ, {"ANOMALY_N_ESTIMATORS": "200"}):
             s = Settings()
             assert s.ANOMALY_N_ESTIMATORS == 200
 
     def test_env_override_random_state(self):
         from core.config import Settings
+
         with patch.dict(os.environ, {"ANOMALY_RANDOM_STATE": "7"}):
             s = Settings()
             assert s.ANOMALY_RANDOM_STATE == 7
 
     def test_env_override_model_path(self):
         from core.config import Settings
+
         with patch.dict(os.environ, {"ANOMALY_MODEL_PATH": "/tmp/my_model.joblib"}):
             s = Settings()
             assert s.ANOMALY_MODEL_PATH == "/tmp/my_model.joblib"
@@ -560,14 +610,301 @@ class TestAnomalySettings:
 # Module-level singleton smoke test
 # ---------------------------------------------------------------------------
 
+
 class TestModuleSingleton:
     def test_singleton_is_fitted(self):
         """The module-level `detector` must be ready for inference after import."""
         from core.intelligence.trace_anomaly_detector import detector as d
+
         assert d.is_fitted
 
     def test_singleton_can_predict(self):
         from core.intelligence.trace_anomaly_detector import detector as d
+
         result = d.predict(ExecutionTrace())
         assert isinstance(result, AnomalyResult)
         assert 0.0 <= result.execution_trace_match <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# Version compatibility — _validate_model, load(), predict(), eviction
+# ---------------------------------------------------------------------------
+
+
+class TestDetectorVersionCompatibility:
+    """
+    Covers the bug-fix surface for Issue #215:
+
+    - ``_validate_model`` rejects wrong types, unfitted models, and
+      feature-count mismatches before any state is mutated.
+    - ``load()`` never sets ``_is_fitted = True`` on an incompatible model.
+    - ``predict()`` raises RuntimeError on sklearn inference failures instead
+      of propagating raw sklearn exceptions to callers.
+    - ``_evict_incompatible_model()`` renames the bad file; no-ops when the
+      file is absent or when rename fails.
+    - ``_try_load_or_fit_baseline()`` evicts the bad file and falls back to
+      baseline fitting without crashing.
+    """
+
+    # ------------------------------------------------------------------
+    # _validate_model — type check
+    # ------------------------------------------------------------------
+
+    def test_validate_model_accepts_fitted_isolation_forest(self, fitted_detector):
+        """A freshly fitted IsolationForest must pass validation."""
+        # Should not raise
+        _validate_model(fitted_detector._model)
+
+    def test_validate_model_rejects_wrong_type(self):
+        """Passing a non-IsolationForest object raises TypeError."""
+        with pytest.raises(TypeError, match="Expected IsolationForest"):
+            _validate_model(object())
+
+    def test_validate_model_rejects_none(self):
+        """None is not an IsolationForest — TypeError must be raised."""
+        with pytest.raises(TypeError, match="Expected IsolationForest"):
+            _validate_model(None)
+
+    # ------------------------------------------------------------------
+    # _validate_model — unfitted model
+    # ------------------------------------------------------------------
+
+    def test_validate_model_rejects_unfitted_isolation_forest(self):
+        """An IsolationForest that has not been fit() raises ValueError."""
+        unfitted = IsolationForest()
+        with pytest.raises(ValueError, match="not fitted"):
+            _validate_model(unfitted)
+
+    # ------------------------------------------------------------------
+    # _validate_model — feature-count mismatch
+    # ------------------------------------------------------------------
+
+    def test_validate_model_rejects_wrong_feature_count(self):
+        """A model trained on 3 features must fail probe inference (expects 8)."""
+        import numpy as np
+        from sklearn.ensemble import IsolationForest as IF
+
+        wrong_model = IF(n_estimators=5, random_state=0)
+        wrong_model.fit(np.zeros((10, 3)))  # 3 features, not 8
+        with pytest.raises(ValueError, match="probe inference failed"):
+            _validate_model(wrong_model)
+
+    # ------------------------------------------------------------------
+    # load() — is_fitted not set on invalid model
+    # ------------------------------------------------------------------
+
+    def test_load_does_not_set_is_fitted_on_type_mismatch(self, detector, tmp_path):
+        """
+        When the payload model fails type validation, load() must raise and
+        leave the detector in its pre-load state (is_fitted=False).
+        """
+        import joblib
+
+        path = str(tmp_path / "bad_type.joblib")
+        joblib.dump(
+            {
+                "model": "not_an_if",
+                "sklearn_version": "0.0.0",
+                "feature_names": FEATURE_NAMES,
+                "n_samples_fitted": 0,
+                "saved_at": "2020-01-01",
+            },
+            path,
+        )
+
+        with pytest.raises((TypeError, ValueError)):
+            detector.load(path=path)
+
+        assert not detector.is_fitted
+
+    def test_load_does_not_set_is_fitted_on_wrong_feature_count(
+        self, detector, tmp_path
+    ):
+        """
+        A model trained on wrong feature count must fail probe validation;
+        detector must remain unfitted.
+        """
+        import joblib
+        import numpy as np
+        from sklearn.ensemble import IsolationForest as IF
+
+        wrong_model = IF(n_estimators=5, random_state=0)
+        wrong_model.fit(np.zeros((10, 3)))
+
+        path = str(tmp_path / "wrong_features.joblib")
+        joblib.dump(
+            {
+                "model": wrong_model,
+                "sklearn_version": "0.0.0",
+                "feature_names": ["a", "b", "c"],
+                "n_samples_fitted": 10,
+                "saved_at": "2020-01-01",
+            },
+            path,
+        )
+
+        with pytest.raises(ValueError, match="probe inference failed"):
+            detector.load(path=path)
+
+        assert not detector.is_fitted
+
+    def test_load_does_not_set_is_fitted_on_corrupt_bytes(self, detector, tmp_path):
+        """A corrupt joblib file must not leave the detector in a fitted state."""
+        path = tmp_path / "corrupt.joblib"
+        path.write_bytes(b"\x00\x01\x02garbage")
+
+        with pytest.raises(Exception):
+            detector.load(path=str(path))
+
+        assert not detector.is_fitted
+
+    def test_load_legacy_raw_model_succeeds(self, fitted_detector, tmp_path):
+        """
+        A legacy file containing a bare IsolationForest (no dict wrapper)
+        must load successfully if the model passes validation.
+        """
+        import joblib
+
+        path = str(tmp_path / "legacy.joblib")
+        joblib.dump(fitted_detector._model, path)
+
+        fresh = TraceAnomalyDetector(auto_load=False)
+        fresh.load(path=path)
+        assert fresh.is_fitted
+
+    # ------------------------------------------------------------------
+    # predict() — inference failure wrapped in RuntimeError
+    # ------------------------------------------------------------------
+
+    def test_predict_wraps_sklearn_error_as_runtime_error(self, fitted_detector):
+        """
+        If decision_function raises (e.g., from a mutated/incompatible model),
+        predict() must wrap the error in RuntimeError with a descriptive message.
+        """
+        from unittest.mock import patch as _patch
+
+        trace = ExecutionTrace()
+        with _patch.object(
+            fitted_detector._model,
+            "decision_function",
+            side_effect=ValueError(
+                "X has 3 features, but IsolationForest is expecting 8"
+            ),
+        ):
+            with pytest.raises(RuntimeError, match="Model inference failed"):
+                fitted_detector.predict(trace)
+
+    def test_predict_error_message_mentions_sklearn_version(self, fitted_detector):
+        """RuntimeError from inference must name the current sklearn version."""
+        from unittest.mock import patch as _patch
+
+        import sklearn
+
+        trace = ExecutionTrace()
+        with _patch.object(
+            fitted_detector._model,
+            "decision_function",
+            side_effect=ValueError("simulated mismatch"),
+        ):
+            with pytest.raises(RuntimeError) as exc_info:
+                fitted_detector.predict(trace)
+
+        assert sklearn.__version__ in str(exc_info.value)
+
+    # ------------------------------------------------------------------
+    # _evict_incompatible_model — file lifecycle
+    # ------------------------------------------------------------------
+
+    def test_evict_renames_existing_model_file(self, tmp_path):
+        """An existing model file must be renamed to <name>.incompatible."""
+        model_path = tmp_path / "model.joblib"
+        model_path.write_bytes(b"dummy")
+
+        d = TraceAnomalyDetector(model_path=str(model_path), auto_load=False)
+        d._evict_incompatible_model()
+
+        assert not model_path.exists()
+        assert (tmp_path / "model.joblib.incompatible").exists()
+
+    def test_evict_is_noop_when_file_missing(self, tmp_path):
+        """_evict_incompatible_model must not raise when the file is absent."""
+        d = TraceAnomalyDetector(
+            model_path=str(tmp_path / "nonexistent.joblib"), auto_load=False
+        )
+        d._evict_incompatible_model()  # should not raise
+
+    def test_evict_logs_warning_on_rename_failure(self, tmp_path, caplog):
+        """An OSError during rename logs a warning but does not propagate."""
+        import logging
+        from unittest.mock import patch as _patch
+
+        model_path = tmp_path / "model.joblib"
+        model_path.write_bytes(b"dummy")
+
+        d = TraceAnomalyDetector(model_path=str(model_path), auto_load=False)
+        with _patch("pathlib.Path.rename", side_effect=OSError("permission denied")):
+            with caplog.at_level(
+                logging.WARNING,
+                logger="core.intelligence.trace_anomaly_detector",
+            ):
+                d._evict_incompatible_model()  # must not raise
+
+        assert any("Could not rename" in r.message for r in caplog.records)
+
+    # ------------------------------------------------------------------
+    # _try_load_or_fit_baseline — eviction + fallback
+    # ------------------------------------------------------------------
+
+    def test_fallback_evicts_corrupt_file_before_baseline_fit(self, tmp_path):
+        """
+        When auto_load fails due to a corrupt file, the file must be evicted
+        and the detector must still be fitted (via baseline).
+        """
+        bad_path = tmp_path / "bad.joblib"
+        bad_path.write_bytes(b"corrupted data")
+
+        d = TraceAnomalyDetector(
+            model_path=str(bad_path),
+            n_estimators=5,
+            auto_load=True,
+        )
+
+        assert d.is_fitted
+        assert not bad_path.exists(), "Corrupt model file was not evicted"
+        assert (tmp_path / "bad.joblib.incompatible").exists()
+
+    def test_fallback_fits_baseline_on_feature_count_mismatch(self, tmp_path):
+        """
+        A valid joblib file with wrong feature count triggers eviction and
+        baseline fitting — the detector must be ready for inference.
+        """
+        import joblib
+        import numpy as np
+        from sklearn.ensemble import IsolationForest as IF
+
+        wrong_model = IF(n_estimators=5, random_state=0)
+        wrong_model.fit(np.zeros((10, 3)))
+
+        path = tmp_path / "mismatch.joblib"
+        joblib.dump(
+            {
+                "model": wrong_model,
+                "sklearn_version": "0.0.0",
+                "feature_names": ["a", "b", "c"],
+                "n_samples_fitted": 10,
+                "saved_at": "2020-01-01",
+            },
+            str(path),
+        )
+
+        d = TraceAnomalyDetector(
+            model_path=str(path),
+            n_estimators=5,
+            auto_load=True,
+        )
+
+        assert d.is_fitted
+        # After fallback the detector must produce valid predictions
+        result = d.predict(ExecutionTrace())
+        assert 0.0 <= result.execution_trace_match <= 1.0
+        assert not path.exists(), "Incompatible model file was not evicted"
