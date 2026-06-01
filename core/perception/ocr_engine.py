@@ -1,7 +1,7 @@
-import pytesseract
-import numpy as np
-from PIL import Image
 import cv2
+import numpy as np
+import pytesseract
+from PIL import Image
 
 
 class OCREngine:
@@ -89,6 +89,6 @@ class OCREngine:
         gray = cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
 
         pil_img = self.convert_to_pil_image(gray)
-        return pytesseract.image_to_string(
+        return pytesseract.image_to_string(  # type: ignore
             pil_img, lang=self.language, config="--oem 3 --psm 6"
         ).strip()

@@ -6,7 +6,7 @@ class ErrorDetector:
         errors = []
         call_depth = 0
         max_depth = 0
-        loop_counts = {}
+        loop_counts: dict[str, int] = {}
 
         for event in trace_events:
             event_type = event.get("event_type")
@@ -15,9 +15,7 @@ class ErrorDetector:
                 errors.append(
                     {
                         "type": "UnhandledException",
-                        "description": event.get(
-                            "exception", "Unhandled exception occurred"
-                        ),
+                        "description": event.get("exception", "Unhandled exception occurred"),
                         "line": event.get("line"),
                         "severity": "high",
                     }

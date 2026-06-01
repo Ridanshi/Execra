@@ -14,15 +14,14 @@ All field constraints (allowed values, ranges, lengths) are derived
 from docs/api_reference.md.
 """
 
-from datetime import datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # System Endpoints
 # ---------------------------------------------------------------------------
+
 
 class SystemRestartRequest(BaseModel):
     """Request body for ``POST /api/v1/system/restart``."""
@@ -37,14 +36,13 @@ class SystemRestartResponse(BaseModel):
     """Response body for ``POST /api/v1/system/restart``."""
 
     message: str = Field(..., description="Human-readable status message.")
-    session_cleared: bool = Field(
-        ..., description="Whether the session was cleared."
-    )
+    session_cleared: bool = Field(..., description="Whether the session was cleared.")
 
 
 # ---------------------------------------------------------------------------
 # Mode Endpoints
 # ---------------------------------------------------------------------------
+
 
 class ModeUpdateRequest(BaseModel):
     """Request body for ``PUT /api/v1/mode``."""
@@ -52,8 +50,7 @@ class ModeUpdateRequest(BaseModel):
     mode: Literal["passive", "active", "mixed"] = Field(
         ...,
         description=(
-            'Target interaction mode. Must be one of: '
-            '"passive", "active", or "mixed".'
+            "Target interaction mode. Must be one of: " '"passive", "active", or "mixed".'
         ),
     )
 
@@ -67,14 +64,13 @@ class ModeResponse(BaseModel):
     description: Optional[str] = Field(
         None, description="Human-readable description of the current mode."
     )
-    message: Optional[str] = Field(
-        None, description="Confirmation message after a mode switch."
-    )
+    message: Optional[str] = Field(None, description="Confirmation message after a mode switch.")
 
 
 # ---------------------------------------------------------------------------
 # Guidance Endpoints
 # ---------------------------------------------------------------------------
+
 
 class GuidanceAskRequest(BaseModel):
     """Request body for ``POST /api/v1/guidance/ask``."""
@@ -94,15 +90,9 @@ class GuidanceAskResponse(BaseModel):
     """Response body for ``POST /api/v1/guidance/ask``."""
 
     answer: str = Field(..., description="Execra's answer to the question.")
-    confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Confidence score (0.0–1.0)."
-    )
-    source: list[str] = Field(
-        ..., description='Signal sources, e.g. ["llm", "execution_trace"].'
-    )
-    reasoning: str = Field(
-        ..., description="Explanation of how the answer was derived."
-    )
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score (0.0–1.0).")
+    source: list[str] = Field(..., description='Signal sources, e.g. ["llm", "execution_trace"].')
+    reasoning: str = Field(..., description="Explanation of how the answer was derived.")
     follow_up_suggestion: Optional[str] = Field(
         None, description="Optional follow-up suggestion for the user."
     )
@@ -111,6 +101,7 @@ class GuidanceAskResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Action Log Endpoints
 # ---------------------------------------------------------------------------
+
 
 class ActionsQueryParams(BaseModel):
     """
@@ -139,15 +130,10 @@ class ActionsQueryParams(BaseModel):
 class UndoActionResponse(BaseModel):
     """Response body for ``POST /api/v1/actions/undo``."""
 
-    message: str = Field(
-        ..., description="Human-readable confirmation message."
-    )
+    message: str = Field(..., description="Human-readable confirmation message.")
     action_undone: Optional[dict] = Field(
         None,
-        description=(
-            "Details of the action that was undone "
-            '(contains "id" and "description").'
-        ),
+        description=("Details of the action that was undone " '(contains "id" and "description").'),
     )
 
 
@@ -155,37 +141,29 @@ class UndoActionResponse(BaseModel):
 # Context Endpoints
 # ---------------------------------------------------------------------------
 
+
 class ContextDeleteResponse(BaseModel):
     """Response body for ``DELETE /api/v1/context``."""
 
-    message: str = Field(
-        ..., description="Confirmation that the session context was cleared."
-    )
+    message: str = Field(..., description="Confirmation that the session context was cleared.")
 
 
 # ---------------------------------------------------------------------------
 # Status Response
 # ---------------------------------------------------------------------------
 
+
 class StatusResponse(BaseModel):
     """Response body for ``GET /api/v1/status``."""
 
-    status: Literal["running", "idle", "error"] = Field(
-        ..., description="Current system status."
-    )
+    status: Literal["running", "idle", "error"] = Field(..., description="Current system status.")
     version: str = Field(..., description="Execra version string.")
-    uptime_seconds: int = Field(
-        ..., ge=0, description="Seconds since last startup."
-    )
+    uptime_seconds: int = Field(..., ge=0, description="Seconds since last startup.")
     active_domain: Literal["digital", "physical", "hybrid"] = Field(
         ..., description="Currently active execution domain."
     )
     active_mode: Literal["passive", "active", "mixed"] = Field(
         ..., description="Currently active interaction mode."
     )
-    perception_fps: int = Field(
-        ..., ge=0, description="Current screen/camera capture rate."
-    )
-    llm_backend: str = Field(
-        ..., description="Active LLM provider name."
-    )
+    perception_fps: int = Field(..., ge=0, description="Current screen/camera capture rate.")
+    llm_backend: str = Field(..., description="Active LLM provider name.")

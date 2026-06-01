@@ -1,35 +1,57 @@
-import numpy as np
-import pytest
-from core.config import Settings
+"""
+Shared pytest configuration and fixtures.
 
-@pytest.fixture
-def mock_settings():
-    """
-    Returns a fresh Settings instance for testing.
-    """
-    return Settings(
-        LLM_BACKEND="test-model",
-        OPENAI_API_KEY="test-openai-key",
-        GEMINI_API_KEY="test-gemini-key",
-        API_PORT=9999
-    )
+Imports are guarded so that this file can be loaded in minimal CI
+environments (e.g. the regression-tests job that only installs pytest
+and python-dotenv) without crashing on a missing package or a missing
+required environment variable.
+"""
+
+import os
+
+import pytest
+
+# Provide safe defaults for required env vars so that
+# core.config / env_validator can be imported in test environments that
+# do not have a .env file.
+os.environ.setdefault("LLM_BACKEND", "llama")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
+
+try:
+    import numpy as np
+
+    _numpy_available = True
+except ImportError:
+    _numpy_available = False
+
+try:
+    from core.config import Settings
+
+    _settings_available = True
+except (ImportError, OSError):
+    Settings = None  # type: ignore[assignment,misc]
+    _settings_available = False
+
 
 @pytest.fixture
 def api_base_url():
-    """
-    Returns the base URL for the API in tests.
-    """
+    """Returns the base URL for the API in tests."""
     return "http://localhost:8000"
 
+
 @pytest.fixture
-def sample_frame() -> np.ndarray:
+def sample_frame():
     """Return a small dummy screen frame for tests."""
-    return np.zeros((10, 10, 3), dtype=np.uint8)
+    if not _numpy_available:
+        pytest.skip("numpy not installed")
+    return np.zeros((10, 10, 3), dtype=np.uint8)  # type: ignore[name-defined]
 
 
 @pytest.fixture
-def mock_settings() -> Settings:
-    """Return a Settings object configured for tests."""
+def mock_settings():
+    """Return a Settings object configured for unit tests."""
+    if not _settings_available or Settings is None:
+        pytest.skip("core.config not available")
     settings = Settings()
     settings.LLM_BACKEND = "test-model"
     settings.OPENAI_API_KEY = "test-openai-key"
@@ -45,9 +67,12 @@ def mock_settings() -> Settings:
     settings.TRUST_SCORE_W2 = 0.35
     settings.TRUST_SCORE_W3 = 0.25
     return settings
+
+
 @pytest.fixture(autouse=True, scope="module")
 def cleanup_module_patches():
-    """Automatically stops all active mocks after each module finishes execution."""
+    """Automatically stop all active mocks after each module finishes."""
     yield
     from unittest.mock import patch
+
     patch.stopall()

@@ -1,7 +1,7 @@
 import asyncio
 import inspect
-import time
 import logging
+import time
 from functools import wraps
 
 from openai import APIError, RateLimitError
@@ -10,14 +10,13 @@ logger = logging.getLogger(__name__)
 
 if not logger.handlers:
     handler = logging.FileHandler("retry.log")
-    formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.WARNING)
 
 logging.basicConfig(filename="retry.log", level=logging.WARNING)
+
 
 def retry(max_retries: int = 3, base_delay: float = 1.0):
     def decorator(func):
@@ -36,8 +35,7 @@ def retry(max_retries: int = 3, base_delay: float = 1.0):
 
                         delay = base_delay * (2**attempt)
                         logger.warning(
-                            f"Retry {attempt + 1}/{max_retries} "
-                            f"after {delay:.1f}s due to: {e}"
+                            f"Retry {attempt + 1}/{max_retries} " f"after {delay:.1f}s due to: {e}"
                         )
                         await asyncio.sleep(delay)
 
@@ -58,8 +56,7 @@ def retry(max_retries: int = 3, base_delay: float = 1.0):
 
                         delay = base_delay * (2**attempt)
                         logger.warning(
-                            f"Retry {attempt + 1}/{max_retries} "
-                            f"after {delay:.1f}s due to: {e}"
+                            f"Retry {attempt + 1}/{max_retries} " f"after {delay:.1f}s due to: {e}"
                         )
                         time.sleep(delay)
 

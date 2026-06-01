@@ -34,10 +34,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Standardized error response model (for Swagger docs)
 # ---------------------------------------------------------------------------
+
 
 class ErrorDetail(BaseModel):
     """Inner error object matching the Execra API error specification."""
@@ -69,6 +69,7 @@ class ErrorResponse(BaseModel):
 # Custom exception class
 # ---------------------------------------------------------------------------
 
+
 class ExecraAPIError(Exception):
     """
     Raise this in any route to return a standardized Execra error response.
@@ -95,9 +96,8 @@ class ExecraAPIError(Exception):
 # Exception handlers (register in api/main.py)
 # ---------------------------------------------------------------------------
 
-async def execra_error_handler(
-    request: Request, exc: ExecraAPIError
-) -> JSONResponse:
+
+async def execra_error_handler(request: Request, exc: ExecraAPIError) -> JSONResponse:
     """
     Catches ``ExecraAPIError`` and returns the project's standard
     error JSON envelope.
@@ -114,9 +114,7 @@ async def execra_error_handler(
     )
 
 
-async def validation_error_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """
     Catches FastAPI's ``RequestValidationError`` (the default 422) and
     transforms it into Execra's standard error format with a 400 status.

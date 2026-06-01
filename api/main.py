@@ -28,6 +28,7 @@ async def startup_event():
     # Restore persisted action history and undo state from SQLite.
     await action_logger.load()
     from api.websockets.router import broadcast_action_log
+
     action_logger.register_callback(broadcast_action_log)
     logger.info("Execra API starting...")
 
@@ -35,6 +36,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     from api.websockets.router import broadcast_action_log
+
     action_logger.unregister_callback(broadcast_action_log)
     logger.info("Execra API shutting down...")
 

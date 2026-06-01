@@ -57,6 +57,7 @@ Known limitations
 - The synthetic baseline targets typical development workloads; production
   operators should always retrain on real data.
 """
+
 from __future__ import annotations
 
 import logging
@@ -65,11 +66,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import joblib
 import numpy as np
 import sklearn
 from sklearn.ensemble import IsolationForest
-
-import joblib
 
 from core.config import settings
 
@@ -103,6 +103,7 @@ _BASELINE_N_SAMPLES: int = 200
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExecutionTrace:
@@ -181,6 +182,7 @@ class AnomalyResult:
 # Pure helper functions (easy to unit-test without instantiating the detector)
 # ---------------------------------------------------------------------------
 
+
 def _extract_features(trace: ExecutionTrace) -> np.ndarray:
     """
     Convert an ``ExecutionTrace`` to a 1-D numpy feature vector.
@@ -242,25 +244,27 @@ def _build_baseline_data(
     """
     rng = np.random.default_rng(seed=random_state)
 
-    duration_ms       = rng.normal(500, 100, n).clip(50, 5_000)
-    cpu_percent       = rng.normal(15, 5, n).clip(1, 95)
-    memory_mb         = rng.normal(200, 30, n).clip(50, 2_000)
-    error_count       = rng.poisson(0.3, n).clip(0, 10).astype(float)
-    warning_count     = rng.poisson(0.8, n).clip(0, 20).astype(float)
-    step_count        = rng.integers(3, 10, n).astype(float)
-    llm_latency_ms    = rng.normal(800, 150, n).clip(100, 10_000)
-    rule_match_count  = rng.integers(0, 5, n).astype(float)
+    duration_ms = rng.normal(500, 100, n).clip(50, 5_000)
+    cpu_percent = rng.normal(15, 5, n).clip(1, 95)
+    memory_mb = rng.normal(200, 30, n).clip(50, 2_000)
+    error_count = rng.poisson(0.3, n).clip(0, 10).astype(float)
+    warning_count = rng.poisson(0.8, n).clip(0, 20).astype(float)
+    step_count = rng.integers(3, 10, n).astype(float)
+    llm_latency_ms = rng.normal(800, 150, n).clip(100, 10_000)
+    rule_match_count = rng.integers(0, 5, n).astype(float)
 
-    return np.column_stack([
-        duration_ms,
-        cpu_percent,
-        memory_mb,
-        error_count,
-        warning_count,
-        step_count,
-        llm_latency_ms,
-        rule_match_count,
-    ])
+    return np.column_stack(
+        [
+            duration_ms,
+            cpu_percent,
+            memory_mb,
+            error_count,
+            warning_count,
+            step_count,
+            llm_latency_ms,
+            rule_match_count,
+        ]
+    )
 
 
 def _validate_model(model: Any) -> None:
@@ -292,9 +296,7 @@ def _validate_model(model: Any) -> None:
         on a different number of features or an incompatible sklearn version).
     """
     if not isinstance(model, IsolationForest):
-        raise TypeError(
-            f"Expected IsolationForest, got {type(model).__name__}."
-        )
+        raise TypeError(f"Expected IsolationForest, got {type(model).__name__}.")
 
     if not hasattr(model, "estimators_"):
         raise ValueError(
@@ -317,6 +319,7 @@ def _validate_model(model: Any) -> None:
 # ---------------------------------------------------------------------------
 # Detector class
 # ---------------------------------------------------------------------------
+
 
 class TraceAnomalyDetector:
     """
@@ -352,24 +355,16 @@ class TraceAnomalyDetector:
         auto_load: bool = True,
     ) -> None:
         self._contamination: float = (
-            contamination
-            if contamination is not None
-            else settings.ANOMALY_CONTAMINATION
+            contamination if contamination is not None else settings.ANOMALY_CONTAMINATION
         )
         self._n_estimators: int = (
-            n_estimators
-            if n_estimators is not None
-            else settings.ANOMALY_N_ESTIMATORS
+            n_estimators if n_estimators is not None else settings.ANOMALY_N_ESTIMATORS
         )
         self._random_state: int = (
-            random_state
-            if random_state is not None
-            else settings.ANOMALY_RANDOM_STATE
+            random_state if random_state is not None else settings.ANOMALY_RANDOM_STATE
         )
         self._model_path: str = (
-            model_path
-            if model_path is not None
-            else settings.ANOMALY_MODEL_PATH
+            model_path if model_path is not None else settings.ANOMALY_MODEL_PATH
         )
 
         self._model: IsolationForest | None = None
@@ -406,9 +401,7 @@ class TraceAnomalyDetector:
         if not traces:
             raise ValueError("fit() requires at least one ExecutionTrace; got empty list.")
         if len(traces) < 2:
-            raise ValueError(
-                f"IsolationForest requires at least 2 samples; got {len(traces)}."
-            )
+            raise ValueError(f"IsolationForest requires at least 2 samples; got {len(traces)}.")
 
         X = np.array([_extract_features(t) for t in traces], dtype=np.float64)
         self._fit_array(X)
@@ -463,8 +456,7 @@ class TraceAnomalyDetector:
         match: float = _score_to_match(raw_score)
 
         feature_values: dict[str, float] = {
-            name: float(val)
-            for name, val in zip(FEATURE_NAMES, features)
+            name: float(val) for name, val in zip(FEATURE_NAMES, features)
         }
 
         if is_anomaly:
@@ -605,13 +597,9 @@ class TraceAnomalyDetector:
         dest = src.parent / (src.name + ".incompatible")
         try:
             src.rename(dest)
-            logger.info(
-                "Renamed incompatible model file '%s' → '%s'.", src, dest
-            )
+            logger.info("Renamed incompatible model file '%s' → '%s'.", src, dest)
         except OSError as exc:
-            logger.warning(
-                "Could not rename incompatible model file '%s': %s.", src, exc
-            )
+            logger.warning("Could not rename incompatible model file '%s': %s.", src, exc)
 
     def _fit_baseline(self) -> None:
         """

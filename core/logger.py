@@ -39,6 +39,7 @@ def setup(
         root.removeHandler(h)
 
     # Configure formatter
+    formatter: logging.Formatter
     if json_format:
         formatter = JSONFormatter()
     else:
@@ -60,6 +61,10 @@ def setup(
     root.setLevel(level)
 
 
-
 setup()
 logger = logging.getLogger("execra")
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Return a named logger for the given module."""
+    return logging.getLogger(name)

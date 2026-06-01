@@ -46,7 +46,7 @@ def compute_delta_pct(prev: Optional[np.ndarray], curr: np.ndarray) -> float:
     if prev is None or prev.shape != curr.shape:
         return 0.0
     diff = np.mean(np.abs(curr.astype(np.float32) - prev.astype(np.float32)))
-    return (diff / 255.0) * 100.0
+    return (diff / 255.0) * 100.0  # type: ignore
 
 
 def _capture_process(
@@ -54,7 +54,7 @@ def _capture_process(
     shm_size: int,
     default_fps: int,
     jpeg_quality: int,
-    stop_event: MPEvent,
+    stop_event: MPEvent,  # type: ignore
 ) -> None:
     shm = shared_memory.SharedMemory(name=shm_name)
     try:
@@ -64,7 +64,7 @@ def _capture_process(
 
         with mss.mss() as sct:
             monitor = sct.monitors[1]
-            while not stop_event.is_set():
+            while not stop_event.is_set():  # type: ignore
                 start_time = time.time()
                 try:
                     screenshot = sct.grab(monitor)
@@ -75,7 +75,8 @@ def _capture_process(
                     current_fps = controller.update(delta_pct)
 
                     _, buffer = cv2.imencode(
-                        ".jpg", frame_bgr,
+                        ".jpg",
+                        frame_bgr,
                         [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality],
                     )
                     jpeg_bytes = buffer.tobytes()
@@ -87,15 +88,15 @@ def _capture_process(
 
                     counter += 1
                     header = struct.pack(HEADER_FORMAT, counter, data_size)
-                    shm.buf[:HEADER_SIZE] = header
-                    shm.buf[HEADER_SIZE:HEADER_SIZE + data_size] = jpeg_bytes
+                    shm.buf[:HEADER_SIZE] = header  # type: ignore
+                    shm.buf[HEADER_SIZE : HEADER_SIZE + data_size] = jpeg_bytes  # type: ignore
                 except Exception as e:
                     logger.error("Capture loop error: %s", e)
 
                 elapsed = time.time() - start_time
                 sleep_time = max(0, (1.0 / current_fps) - elapsed)
                 for _ in range(int(sleep_time / 0.05) + 1):
-                    if stop_event.is_set():
+                    if stop_event.is_set():  # type: ignore
                         break
                     time.sleep(0.05)
     finally:
@@ -138,9 +139,11 @@ class ScreenCapture:
             pass
 
         self._shm = shared_memory.SharedMemory(
-            name=SHMEM_NAME, create=True, size=self.max_shared_memory_size,
+            name=SHMEM_NAME,
+            create=True,
+            size=self.max_shared_memory_size,
         )
-        self._shm.buf[:HEADER_SIZE] = b'\x00' * HEADER_SIZE
+        self._shm.buf[:HEADER_SIZE] = b"\x00" * HEADER_SIZE  # type: ignore
 
         self._stop_event.clear()
         self._stop_mp_event.clear()
@@ -172,12 +175,14 @@ class ScreenCapture:
         try:
             while not self._stop_event.is_set():
                 try:
-                    header = bytes(shm.buf[:HEADER_SIZE])
+                    header = bytes(shm.buf[:HEADER_SIZE])  # type: ignore
                     counter, data_size = struct.unpack(HEADER_FORMAT, header)
 
                     if counter != prev_counter and data_size > 0:
                         prev_counter = counter
-                        jpeg_bytes = bytes(shm.buf[HEADER_SIZE:HEADER_SIZE + data_size])
+                        jpeg_bytes = bytes(  # type: ignore[index]
+                            shm.buf[HEADER_SIZE : HEADER_SIZE + data_size]  # type: ignore[index]
+                        )
                         np_arr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
                         frame_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
                         if frame_bgr is not None:

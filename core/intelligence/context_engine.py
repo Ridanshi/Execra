@@ -1,7 +1,10 @@
-import aiosqlite
 import uuid
-from typing import Optional,Dict,Any
-from core.security.crypto import encrypt,decrypt
+from typing import Any, Dict, Optional
+
+import aiosqlite
+
+from core.security.crypto import decrypt, encrypt
+
 
 class ContextEngine:
     def __init__(self, db_path: str = "data/execra.db"):
@@ -20,22 +23,27 @@ class ContextEngine:
                     domain TEXT
                 )
             """)
-            await db.execute("""
+            await db.execute(
+                """
                 INSERT INTO session_context (session_id, current_step, step_description, domain)
                 VALUES (?, ?, ?, ?)
-            """, (session_id, 0, "", domain))
+            """,
+                (session_id, 0, "", domain),
+            )
             await db.commit()
 
         return session_id
-    
+
     async def update_step(self, session_id: str, step: int, description: str) -> None:
         """Update the current step and encrypt the description."""
         encrypted_desc = encrypt(description)
 
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "UPDATE session_context SET current_step = ?, step_description = ? WHERE session_id = ?",
-                (step, encrypted_desc, session_id)
+                "UPDATE session_context"
+                " SET current_step = ?, step_description = ?"
+                " WHERE session_id = ?",
+                (step, encrypted_desc, session_id),
             )
             await db.commit()
 
@@ -43,8 +51,9 @@ class ContextEngine:
         """Fetch a session's context and decrypt the description."""
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
-                "SELECT session_id, current_step, step_description, domain FROM session_context WHERE session_id = ?",
-                (session_id,)
+                "SELECT session_id, current_step, step_description, domain"
+                " FROM session_context WHERE session_id = ?",
+                (session_id,),
             ) as cursor:
                 row = await cursor.fetchone()
                 if row:
@@ -54,9 +63,10 @@ class ContextEngine:
                         "session_id": row[0],
                         "current_step": row[1],
                         "step_description": decrypted_desc,
-                        "domain": row[3]
+                        "domain": row[3],
                     }
         return None
 
-# Shared instance 
+
+# Shared instance
 context_engine = ContextEngine()

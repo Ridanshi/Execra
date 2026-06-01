@@ -1,5 +1,7 @@
 import logging
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
 from api.websockets.connection_manager import ConnectionManager
 
 logger = logging.getLogger(__name__)
@@ -8,7 +10,7 @@ manager = ConnectionManager()
 
 
 async def broadcast_action_log(action) -> None:
-    """Callback triggered by action_logger.log_action() to broadcast the event to all WebSocket clients."""
+    """Broadcast a logged action to all connected WebSocket clients."""
     payload = {
         "event": "action_logged",
         "version": "1.0.0",

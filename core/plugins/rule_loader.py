@@ -1,11 +1,9 @@
-import os
 import logging
-import yaml
-from dataclasses import dataclass, field
+import os
 from typing import Literal
+
+import yaml
 from pydantic import BaseModel, ValidationError
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 
 logger = logging.getLogger(__name__)
 

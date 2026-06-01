@@ -17,6 +17,7 @@ Typical usage::
     core = IntelligenceCore(client)
     guidance = await core.generate_guidance(prompt, trust_score=0.45)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -59,6 +60,7 @@ _JUDGE_PREFIX = (
 # Internal data structure
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _DebateRound:
     """One completed round of Proposer and Critic outputs."""
@@ -70,6 +72,7 @@ class _DebateRound:
 # ---------------------------------------------------------------------------
 # DebateEngine
 # ---------------------------------------------------------------------------
+
 
 class DebateEngine:
     """
@@ -186,6 +189,7 @@ class DebateEngine:
 # IntelligenceCore
 # ---------------------------------------------------------------------------
 
+
 class IntelligenceCore:
     """
     Orchestrates guidance generation with automatic routing based on trust score.
@@ -240,13 +244,9 @@ class IntelligenceCore:
                 self._debate_rounds,
             )
             try:
-                return await self._debate_engine.debate(
-                    prompt, rounds=self._debate_rounds
-                )
+                return await self._debate_engine.debate(prompt, rounds=self._debate_rounds)
             except Exception:
-                logger.exception(
-                    "DebateEngine failed; falling back to single LLM call"
-                )
+                logger.exception("DebateEngine failed; falling back to single LLM call")
 
         return await self._client.complete(prompt)
 
@@ -254,6 +254,7 @@ class IntelligenceCore:
 # ---------------------------------------------------------------------------
 # Lightweight benchmarking utility
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DebateBenchmark:

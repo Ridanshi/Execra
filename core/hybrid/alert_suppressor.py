@@ -1,10 +1,12 @@
 import logging
 import time
 from collections import OrderedDict
-from core.models import GuidanceInstruction
+
 from core.config import settings
+from core.models import GuidanceInstruction
 
 logger = logging.getLogger(__name__)
+
 
 class AlertSuppressor:
 
@@ -12,10 +14,7 @@ class AlertSuppressor:
         self.cooldown_map = cooldown_map
         self._suppression_map: OrderedDict = OrderedDict()
         self.MAX_SIZE = 500
-        self._stats = {
-            "total_suppressed": 0,
-            "by_severity": {}
-        }
+        self._stats = {"total_suppressed": 0, "by_severity": {}}
 
     def should_suppress(self, instruction: GuidanceInstruction, severity: str) -> bool:
         """Return True if the same instruction was sent within the cooldown window."""
@@ -34,8 +33,10 @@ class AlertSuppressor:
                 self._suppression_map.move_to_end(key)
 
                 # Update stats
-                self._stats["total_suppressed"] += 1
-                self._stats["by_severity"][severity] = self._stats["by_severity"].get(severity, 0) + 1
+                self._stats["total_suppressed"] += 1  # type: ignore
+                self._stats["by_severity"][severity] = (  # type: ignore
+                    self._stats["by_severity"].get(severity, 0) + 1  # type: ignore
+                )
 
                 # Log suppressed instruction
                 logger.debug(f"Suppressed instruction: {instruction.instruction}")
@@ -49,7 +50,7 @@ class AlertSuppressor:
             self._suppression_map.popitem(last=False)
 
         return False
-    
+
     def reset(self, instruction_text: str) -> None:
         """Manually clear the suppression record for a specific instruction."""
 
@@ -61,12 +62,14 @@ class AlertSuppressor:
     def get_suppression_stats(self) -> dict:
         """Return stats about suppressed instructions."""
         return self._stats
-    
+
 
 # Shared instance — initialized with default cooldowns from config
 
-alert_suppressor = AlertSuppressor(cooldown_map={
-    "info": settings.ALERT_COOLDOWN_INFO,
-    "warning": settings.ALERT_COOLDOWN_WARNING,
-    "critical": 0
-})
+alert_suppressor = AlertSuppressor(
+    cooldown_map={
+        "info": settings.ALERT_COOLDOWN_INFO,
+        "warning": settings.ALERT_COOLDOWN_WARNING,
+        "critical": 0,
+    }
+)

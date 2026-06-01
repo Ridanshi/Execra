@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Literal
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from core.hybrid.action_logger import action_logger
 
+from core.hybrid.action_logger import action_logger
 
 router = APIRouter()
 
@@ -24,17 +25,19 @@ class SessionContext(BaseModel):
     domain: Literal["digital", "physical", "hybrid"]
     started_at: datetime
 
+
 # In memory placeholder until SessionContext is wired to SQLite
 _current_context: SessionContext | None = None
+
 
 @router.get("/context")
 async def get_context():
     if _current_context is None:
         raise HTTPException(
-            status_code=404,
-            detail="No active session context found. Start Execra first."
+            status_code=404, detail="No active session context found. Start Execra first."
         )
     return _current_context
+
 
 @router.delete("/context")
 async def clear_context():

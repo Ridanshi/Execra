@@ -1,14 +1,16 @@
-from pathlib import Path
-import numpy as np
-import cv2
-from ultralytics import YOLO
 import time
+from pathlib import Path
+
+import cv2
+import numpy as np
+from ultralytics import YOLO
 
 from core.config import settings
-from core.models import Detection
 from core.logger import get_logger
+from core.models import Detection
 
 logger = get_logger(__name__)
+
 
 class ObjectDetector:
     """YOLOv8-based object detector."""
@@ -24,7 +26,7 @@ class ObjectDetector:
 
         self.threshold = threshold or settings.DETECTION_THRESHOLD
         self.model = YOLO(str(model_file))
-    
+
     def detect(self, frame: np.ndarray) -> list[Detection]:
         """
         Run YOLO inference on a frame and return filtered detections.
@@ -33,11 +35,8 @@ class ObjectDetector:
         results = self.model(frame)
         elapsed = time.perf_counter() - start_time
 
-        logger.debug(
-            "YOLO inference completed in %.4f seconds",
-            elapsed
-        )
-        
+        logger.debug("YOLO inference completed in %.4f seconds", elapsed)
+
         detections: list[Detection] = []
 
         for result in results:
@@ -50,19 +49,12 @@ class ObjectDetector:
                 class_id = int(box.cls[0])
                 label = result.names[class_id]
 
-                x1, y1, x2, y2 = map(
-                    int,
-                    box.xyxy[0].tolist()
-                )
+                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
 
                 detections.append(
-                    Detection(
-                        label=label,
-                        confidence=confidence,
-                        bounding_box=[x1, y1, x2, y2]
-                    )
+                    Detection(label=label, confidence=confidence, bounding_box=[x1, y1, x2, y2])
                 )
-        
+
         return detections
 
     def draw_boxes(self, frame: np.ndarray, detections: list[Detection]) -> np.ndarray:
@@ -74,13 +66,18 @@ class ObjectDetector:
         for detection in detections:
             x1, y1, x2, y2 = detection.bounding_box
 
-            label = (
-                f"{detection.label} "
-                f"{detection.confidence:.2f}"
-            )
+            label = f"{detection.label} " f"{detection.confidence:.2f}"
 
             cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-            cv2.putText(annotated_frame, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(
+                annotated_frame,
+                label,
+                (x1, max(y1 - 10, 0)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
 
         return annotated_frame

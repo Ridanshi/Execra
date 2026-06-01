@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from core.plugins.rule_loader import PluginLoader
 
 router = APIRouter()

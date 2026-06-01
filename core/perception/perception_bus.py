@@ -2,8 +2,8 @@ import asyncio
 import logging
 from typing import Optional
 
-from core.perception.screen_capture import ScreenCapture
 from core.perception.camera_feed import CameraFeed
+from core.perception.screen_capture import ScreenCapture
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,7 @@ class PerceptionBus:
         """
         valid_domains = {"digital", "physical", "hybrid"}
         if domain not in valid_domains:
-            raise ValueError(
-                f"Invalid domain: '{domain}'. Must be one of {valid_domains}"
-            )
+            raise ValueError(f"Invalid domain: '{domain}'. Must be one of {valid_domains}")
 
         self.domain = domain
         self.screen_capture = screen_capture or ScreenCapture()

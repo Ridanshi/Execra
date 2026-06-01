@@ -4,10 +4,11 @@ Modules should import settings from here instead of os.getenv().
 """
 
 import os
-from typing import List, Optional
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
+
 from dotenv import load_dotenv
+
 from core.utils.env_validator import assert_env
 
 # Load .env file
@@ -54,6 +55,15 @@ class Settings:
     # Alert Suppression
     ALERT_COOLDOWN_INFO: int = 60
     ALERT_COOLDOWN_WARNING: int = 30
+
+    # WebSocket Security
+    # Set WS_API_TOKEN to a non-empty secret in production; empty string
+    # disables auth with a warning (dev-only convenience).
+    WS_API_TOKEN: str = ""
+    WS_MAX_CONNECTIONS: int = 10
+    WS_RATE_LIMIT_MESSAGES: int = 30
+    WS_RATE_LIMIT_WINDOW_S: int = 60
+    WS_HEARTBEAT_INTERVAL_S: int = 30
 
     # Redis Configuration
     REDIS_URL: str = "redis://localhost:6379"
@@ -148,6 +158,18 @@ class Settings:
             self.ALERT_COOLDOWN_INFO = int(val)
         if val := os.getenv("ALERT_COOLDOWN_WARNING"):
             self.ALERT_COOLDOWN_WARNING = int(val)
+
+        # WebSocket Security
+        if val := os.getenv("WS_API_TOKEN"):
+            self.WS_API_TOKEN = val
+        if val := os.getenv("WS_MAX_CONNECTIONS"):
+            self.WS_MAX_CONNECTIONS = int(val)
+        if val := os.getenv("WS_RATE_LIMIT_MESSAGES"):
+            self.WS_RATE_LIMIT_MESSAGES = int(val)
+        if val := os.getenv("WS_RATE_LIMIT_WINDOW_S"):
+            self.WS_RATE_LIMIT_WINDOW_S = int(val)
+        if val := os.getenv("WS_HEARTBEAT_INTERVAL_S"):
+            self.WS_HEARTBEAT_INTERVAL_S = int(val)
 
     def validate_required(self) -> None:
         """

@@ -8,3 +8,9 @@ flake8
 mypy
 pre-commit
 httpx
+# Runtime packages required by the test suite
+aiosqlite
+pydantic
+fastapi
+python-dotenv
+cryptography

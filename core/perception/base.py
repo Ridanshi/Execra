@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 class BasePerceptionEngine(ABC):
@@ -40,7 +40,4 @@ class BasePerceptionEngine(ABC):
         """
         Returns the current status of the engine.
         """
-        return {
-            "name": self.name,
-            "is_running": self.is_running
-        }
+        return {"name": self.name, "is_running": self.is_running}

@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
-from core.plugins.rule_loader import PluginLoader, RulePlugin
+
+from core.plugins.rule_loader import PluginLoader
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,7 @@ class PluginRuleEngine:
         enabled_plugins = self.plugin_loader.get_enabled()
 
         for plugin in enabled_plugins:
-            keyword_match = any(
-                kw.lower() in screen_text.lower()
-                for kw in plugin.trigger_keywords
-            )
+            keyword_match = any(kw.lower() in screen_text.lower() for kw in plugin.trigger_keywords)
             object_match = any(
                 obj.lower() in [o.lower() for o in detected_objects]
                 for obj in plugin.trigger_objects
@@ -34,7 +32,7 @@ class PluginRuleEngine:
                 outcome = Outcome(
                     plugin_name=plugin.name,
                     severity=plugin.severity,
-                    instruction=plugin.instruction_template
+                    instruction=plugin.instruction_template,
                 )
                 outcomes.append(outcome)
                 logger.info(f"Plugin '{plugin.name}' matched.")

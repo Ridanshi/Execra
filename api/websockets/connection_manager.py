@@ -1,11 +1,13 @@
 import logging
+
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 
+
 class ConnectionManager:
-    """Manages active WebSocket connections, handles connection/disconnection, and safe broadcasts."""
+    """Manages active WebSocket connections, handles connect/disconnect, and safe broadcasts."""
 
     def __init__(self):
         self.active_connections: set[WebSocket] = set()

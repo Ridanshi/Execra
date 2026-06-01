@@ -1,12 +1,15 @@
-from fastapi import APIRouter
 import time
+
+from fastapi import APIRouter
+
 from core.config import settings
 
 router = APIRouter()
 
 start_time = time.time()
 
-@router.get('/status')
+
+@router.get("/status")
 async def get_status():
     uptime_seconds = int(time.time() - start_time)
 
@@ -17,6 +20,5 @@ async def get_status():
         "active_domain": "digital",
         "active_mode": "passive",
         "perception_fps": settings.SCREEN_CAPTURE_FPS,
-        "llm_backend": settings.LLM_BACKEND
-        } 
-    
+        "llm_backend": settings.LLM_BACKEND,
+    }

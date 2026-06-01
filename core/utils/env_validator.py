@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import List, Optional, Type, Callable
+from typing import Callable, List, Optional, Type
 
 
 @dataclass
@@ -21,7 +21,7 @@ def _validate_fps(value: str) -> bool:
     try:
         v = int(value)
         return 1 <= v <= 30
-    except:
+    except ValueError:
         return False
 
 
@@ -65,9 +65,7 @@ def validate_env() -> List[str]:
 
         # Allowed values check
         if spec.allowed_values and value not in spec.allowed_values:
-            errors.append(
-                f"{spec.key} must be one of {spec.allowed_values}, got '{value}'"
-            )
+            errors.append(f"{spec.key} must be one of {spec.allowed_values}, got '{value}'")
 
         # Custom validator
         if spec.validator and not spec.validator(value):

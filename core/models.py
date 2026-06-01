@@ -13,16 +13,18 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Detection — YOLO object detection result
 # ---------------------------------------------------------------------------
+
 
 class Detection(BaseModel):
     """Represents a single object detected by YOLOv8 in a camera frame."""
 
     label: str = Field(..., description="Class label of the detected object, e.g. 'screwdriver'")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Detection confidence score (0.0–1.0)")
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Detection confidence score (0.0–1.0)"
+    )
     bounding_box: list[int] = Field(
         ...,
         min_length=4,
@@ -34,6 +36,7 @@ class Detection(BaseModel):
 # ---------------------------------------------------------------------------
 # ErrorRecord — a single logged error entry in a session
 # ---------------------------------------------------------------------------
+
 
 class ErrorRecord(BaseModel):
     """Represents one error that occurred during a guided session."""
@@ -47,6 +50,7 @@ class ErrorRecord(BaseModel):
 # ActionRecord — a single user action entry in the action log
 # ---------------------------------------------------------------------------
 
+
 class ActionRecord(BaseModel):
     """Represents one user action recorded in the session action log."""
 
@@ -57,7 +61,9 @@ class ActionRecord(BaseModel):
     domain: Literal["digital", "physical"] = Field(
         ..., description="Execution domain in which the action took place"
     )
-    was_guided: bool = Field(..., description="Whether this action was performed under Execra guidance")
+    was_guided: bool = Field(
+        ..., description="Whether this action was performed under Execra guidance"
+    )
     guidance_confidence: float | None = Field(
         None,
         ge=0.0,
@@ -69,6 +75,7 @@ class ActionRecord(BaseModel):
 # ---------------------------------------------------------------------------
 # Outcome — consequence simulation result
 # ---------------------------------------------------------------------------
+
 
 class Outcome(BaseModel):
     """Represents one predicted outcome from the Consequence Simulation Engine."""
@@ -83,6 +90,7 @@ class Outcome(BaseModel):
 # ---------------------------------------------------------------------------
 # GuidanceInstruction — full guidance output delivered to the user
 # ---------------------------------------------------------------------------
+
 
 class GuidanceInstruction(BaseModel):
     """
@@ -100,12 +108,15 @@ class GuidanceInstruction(BaseModel):
     mode: Literal["safe", "expert"] = Field(..., description="Guidance delivery mode")
     step: int = Field(..., ge=0, description="Current task step number")
     total_steps: int = Field(..., ge=1, description="Total number of steps in the task model")
-    generated_at: datetime = Field(..., description="UTC timestamp when the instruction was generated")
+    generated_at: datetime = Field(
+        ..., description="UTC timestamp when the instruction was generated"
+    )
 
 
 # ---------------------------------------------------------------------------
 # SessionContext — the full state of an active Execra session
 # ---------------------------------------------------------------------------
+
 
 class SessionContext(BaseModel):
     """

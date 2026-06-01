@@ -15,7 +15,7 @@ class PrivacyMasker:
 
     @staticmethod
     def apply_geometric_mask(
-        image: np.ndarray, regions: List[Tuple[int, int, int, int]] = None
+        image: np.ndarray, regions: List[Tuple[int, int, int, int]] = None  # type: ignore
     ) -> np.ndarray:
         """
         Blacks out specific rectangular regions of the image.
@@ -31,9 +31,7 @@ class PrivacyMasker:
             return image
 
         masked_image = image.copy()
-        target_regions = (
-            regions if regions is not None else settings.MASKED_REGIONS
-        )
+        target_regions = regions if regions is not None else settings.MASKED_REGIONS
 
         for x1, y1, x2, y2 in target_regions:
             # Ensure coordinates are within image boundaries
@@ -48,7 +46,7 @@ class PrivacyMasker:
         return masked_image
 
     @staticmethod
-    def redact_text(text: str, extra_patterns: List[str] = None) -> str:
+    def redact_text(text: str, extra_patterns: List[str] = None) -> str:  # type: ignore
         """
         Redacts sensitive patterns (emails, credit cards, etc.) from text.
 

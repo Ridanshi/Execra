@@ -1,5 +1,4 @@
 import sys
-from typing import Optional, Any
 
 
 class CodeTracer:
@@ -13,7 +12,7 @@ class CodeTracer:
         self.RECURSION_LIMIT = 1000
         self.EVENT_LIMIT = 10000
 
-    def start_trace(self,target_module_name:str):
+    def start_trace(self, target_module_name: str):
         self.target_module = target_module_name
 
         # Reset state
@@ -26,13 +25,11 @@ class CodeTracer:
         self.is_active = True
         sys.settrace(self._trace_handler)
 
-    
     def stop_trace(self) -> None:
         self.is_active = False
         sys.settrace(None)
 
-    
-    def _trace_handler(self,frame, event, arg):
+    def _trace_handler(self, frame, event, arg):
 
         # Threshold checking
         if self.event_count >= self.EVENT_LIMIT or self.current_depth >= self.RECURSION_LIMIT:
@@ -45,13 +42,13 @@ class CodeTracer:
             return self._trace_handler
 
         # Record Event
-        record ={
+        record = {
             "event_type": event,
             "function": frame.f_code.co_name,
             "lineno": frame.f_lineno,
-            "args":{},
+            "args": {},
             "return_value": None,
-            "exception": None 
+            "exception": None,
         }
 
         # Handles call event
@@ -60,7 +57,7 @@ class CodeTracer:
             self.current_depth += 1
             if self.current_depth > self.max_depth_seen:
                 self.max_depth_seen = self.current_depth
-            
+
             record["args"] = {k: str(v) for k, v in frame.f_locals.items()}
 
         # Handles return event
@@ -77,27 +74,27 @@ class CodeTracer:
         self._events.append(record)
         self.event_count += 1
 
-
         return self._trace_handler
-    
+
     def get_trace_log(self) -> list[dict]:
         return self._events
-    
+
     def get_summary(self):
 
         summary = {
             "total_calls": len([1 for event in self._events if event["event_type"] == "call"]),
-
-            "total_lines": len([1 for event in self._events if event["event_type"]== "line"]),
-
-            "exceptions_caught": len([1 for event in self._events if event["event_type"]== "exception"]),
-
+            "total_lines": len([1 for event in self._events if event["event_type"] == "line"]),
+            "exceptions_caught": len(
+                [1 for event in self._events if event["event_type"] == "exception"]
+            ),
             "max_recursion_depth": self.max_depth_seen,
-
-            "execution_path": [event["function"] for event in self._events if event["event_type"] == "call"]
+            "execution_path": [
+                event["function"] for event in self._events if event["event_type"] == "call"
+            ],
         }
 
         return summary
-    
+
+
 # Shared Instance
 code_tracer = CodeTracer()

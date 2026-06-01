@@ -47,6 +47,7 @@ Close codes
 1000 — Normal closure (client-initiated)
 1006 — Abnormal closure (network error / no close frame)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -89,6 +90,7 @@ _rate_state: dict[int, deque[float]] = {}
 # Connection lifecycle helpers
 # ---------------------------------------------------------------------------
 
+
 def _unregister(conn_id: int) -> None:
     """
     Remove *conn_id* from the active registry and its rate-limit state.
@@ -105,6 +107,7 @@ def _unregister(conn_id: int) -> None:
 # ---------------------------------------------------------------------------
 # Broadcast with stale-connection cleanup
 # ---------------------------------------------------------------------------
+
 
 async def broadcast(message: dict[str, Any]) -> None:
     """
@@ -145,6 +148,7 @@ async def broadcast(message: dict[str, Any]) -> None:
 # Heartbeat — proactive stale-connection detection
 # ---------------------------------------------------------------------------
 
+
 async def _heartbeat(conn_id: int, websocket: WebSocket, interval: int) -> None:
     """
     Send a periodic application-level ping to detect silent disconnects.
@@ -184,6 +188,7 @@ async def _heartbeat(conn_id: int, websocket: WebSocket, interval: int) -> None:
 # ---------------------------------------------------------------------------
 # Internal helpers (authentication, rate limiting, rejection)
 # ---------------------------------------------------------------------------
+
 
 def _verify_token(token: str) -> bool:
     """
@@ -251,6 +256,7 @@ async def _reject(websocket: WebSocket, code: int, reason: str) -> None:
 # WebSocket endpoint
 # ---------------------------------------------------------------------------
 
+
 @router.websocket("/ws/guidance")
 async def guidance_ws(
     websocket: WebSocket,
@@ -309,8 +315,7 @@ async def guidance_ws(
     if len(_connections) > settings.WS_MAX_CONNECTIONS:
         _unregister(conn_id)
         logger.warning(
-            "WebSocket guidance: rejected — connection limit reached "
-            "(%d/%d, remote=%s)",
+            "WebSocket guidance: rejected — connection limit reached " "(%d/%d, remote=%s)",
             len(_connections),
             settings.WS_MAX_CONNECTIONS,
             websocket.client,
@@ -326,8 +331,7 @@ async def guidance_ws(
     try:
         await websocket.accept()
         logger.info(
-            "WebSocket guidance: connection accepted "
-            "(remote=%s, active=%d/%d)",
+            "WebSocket guidance: connection accepted " "(remote=%s, active=%d/%d)",
             websocket.client,
             len(_connections),
             settings.WS_MAX_CONNECTIONS,
@@ -348,8 +352,7 @@ async def guidance_ws(
             # --------------------------------------------------------
             if not _check_rate_limit(conn_id):
                 logger.warning(
-                    "WebSocket guidance: rate limit exceeded "
-                    "(remote=%s, limit=%d msg/%ds)",
+                    "WebSocket guidance: rate limit exceeded " "(remote=%s, limit=%d msg/%ds)",
                     websocket.client,
                     settings.WS_RATE_LIMIT_MESSAGES,
                     settings.WS_RATE_LIMIT_WINDOW_S,
@@ -373,8 +376,7 @@ async def guidance_ws(
                 # Map abnormal-close RuntimeError to a normal disconnect
                 # so it surfaces as INFO rather than ERROR in logs.
                 logger.info(
-                    "WebSocket guidance: connection closed abnormally "
-                    "(remote=%s — %s)",
+                    "WebSocket guidance: connection closed abnormally " "(remote=%s — %s)",
                     websocket.client,
                     exc,
                 )
@@ -384,9 +386,7 @@ async def guidance_ws(
 
             if not prompt:
                 try:
-                    await websocket.send_json(
-                        {"error": "Missing required field: 'prompt'"}
-                    )
+                    await websocket.send_json({"error": "Missing required field: 'prompt'"})
                 except Exception:
                     # Send failed — client likely disconnected.
                     break
@@ -401,9 +401,7 @@ async def guidance_ws(
             #     trust_score=float(data.get("trust_score", 1.0)),
             # )
             # --------------------------------------------------------
-            guidance: str = (
-                f"[guidance stub] echoing prompt ({len(prompt)} chars)"
-            )
+            guidance: str = f"[guidance stub] echoing prompt ({len(prompt)} chars)"
 
             try:
                 await websocket.send_json({"guidance": guidance})

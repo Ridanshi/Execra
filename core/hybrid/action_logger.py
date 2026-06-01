@@ -51,9 +51,7 @@ class ActionRecord(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     session_id: str = "default"
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     type: str = ""
     description: str = ""
     domain: Literal["digital", "physical"] = "digital"
@@ -141,8 +139,7 @@ class ActionLogger:
             migrations = [
                 (
                     "is_undoable",
-                    "ALTER TABLE action_log ADD COLUMN"
-                    " is_undoable INTEGER NOT NULL DEFAULT 0",
+                    "ALTER TABLE action_log ADD COLUMN" " is_undoable INTEGER NOT NULL DEFAULT 0",
                 ),
                 (
                     "undo_instruction",
@@ -150,8 +147,7 @@ class ActionLogger:
                 ),
                 (
                     "undone",
-                    "ALTER TABLE action_log ADD COLUMN"
-                    " undone INTEGER NOT NULL DEFAULT 0",
+                    "ALTER TABLE action_log ADD COLUMN" " undone INTEGER NOT NULL DEFAULT 0",
                 ),
             ]
             for column_name, ddl in migrations:
@@ -173,9 +169,7 @@ class ActionLogger:
         await self._init_db()
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            cursor = await db.execute(
-                "SELECT * FROM action_log ORDER BY timestamp ASC"
-            )
+            cursor = await db.execute("SELECT * FROM action_log ORDER BY timestamp ASC")
             rows = await cursor.fetchall()
 
         self._actions = [self._row_to_action(row) for row in rows]
@@ -278,9 +272,7 @@ class ActionLogger:
     def total_actions(self) -> int:
         return len(self._actions)
 
-    async def get_history(
-        self, limit: int = 20, offset: int = 0
-    ) -> list[ActionRecord]:
+    async def get_history(self, limit: int = 20, offset: int = 0) -> list[ActionRecord]:
         """Fetch paginated action history from SQLite, newest first."""
         await self._init_db()
 
@@ -360,16 +352,14 @@ class ActionLogger:
         error_id = str(uuid.uuid4())
 
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS error_history (
                     id TEXT PRIMARY KEY,
                     session_id TEXT,
                     step INTEGER,
                     error TEXT
                 )
-                """
-            )
+                """)
             await db.execute(
                 """
                 INSERT INTO error_history (id, session_id, step, error)
@@ -384,8 +374,7 @@ class ActionLogger:
         errors: list[Dict[str, Any]] = []
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-                " AND name='error_history'"
+                "SELECT name FROM sqlite_master WHERE type='table'" " AND name='error_history'"
             ) as cursor:
                 if not await cursor.fetchone():
                     return []

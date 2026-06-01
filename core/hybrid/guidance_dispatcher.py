@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime, timezone
 from typing import Callable
-from core.hybrid.alert_suppressor import alert_suppressor
+
 from plyer import notification
 
+from core.hybrid.alert_suppressor import alert_suppressor
 from core.models import GuidanceInstruction
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class GuidanceDispatcher:
         """Routes the instruction to all registered output channels."""
         # Check if instruction should be suppressed
         if alert_suppressor.should_suppress(instruction, severity):
-            return  
+            return
 
         logger.info(
             f"Dispatching instruction (Step {instruction.step}/{instruction.total_steps}): "

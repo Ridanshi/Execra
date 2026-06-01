@@ -49,11 +49,9 @@ class CameraFeed:
             logging.warning("Failed to read frame")
             return None
 
-        return frame
+        return frame  # type: ignore
 
-    def start_feed_loop(
-        self, queue: asyncio.Queue, loop: asyncio.AbstractEventLoop
-    ) -> None:
+    def start_feed_loop(self, queue: asyncio.Queue, loop: asyncio.AbstractEventLoop) -> None:
         """
         Start the threaded camera feed loop.
 
@@ -65,9 +63,7 @@ class CameraFeed:
         if self.thread is not None and self.thread.is_alive():
             return
 
-        self.thread = threading.Thread(
-            target=self._feed_loop, args=(queue, loop), daemon=True
-        )
+        self.thread = threading.Thread(target=self._feed_loop, args=(queue, loop), daemon=True)
 
         self.thread.start()
 
@@ -80,9 +76,7 @@ class CameraFeed:
 
         while self.running:
             if self.cap is None or not self.cap.isOpened():
-                logging.warning(
-                    "Camera unavailable. Retrying connection in 5 seconds..."
-                )
+                logging.warning("Camera unavailable. Retrying connection in 5 seconds...")
 
                 time.sleep(5)
 

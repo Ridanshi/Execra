@@ -65,18 +65,14 @@ def calculate_trust_score(
         ("execution_trace_match", execution_trace_match),
     ]:
         if not (0.0 <= value <= 1.0):
-            raise ValueError(
-                f"Input '{name}' must be between 0 and 1. Received: {value}"
-            )
+            raise ValueError(f"Input '{name}' must be between 0 and 1. Received: {value}")
 
     w1 = settings.TRUST_SCORE_W1
     w2 = settings.TRUST_SCORE_W2
     w3 = settings.TRUST_SCORE_W3
 
     score = (
-        w1 * llm_confidence
-        + w2 * (1.0 if rule_validation else 0.0)
-        + w3 * execution_trace_match
+        w1 * llm_confidence + w2 * (1.0 if rule_validation else 0.0) + w3 * execution_trace_match
     ) / (w1 + w2 + w3)
 
     level = ""
