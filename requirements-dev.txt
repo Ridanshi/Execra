@@ -1,3 +1,4 @@
+# Testing and quality tools
 pytest
 pytest-asyncio
 pytest-cov
@@ -8,9 +9,26 @@ flake8
 mypy
 pre-commit
 httpx
-# Runtime packages required by the test suite
+
+# Runtime packages required by the test suite.
+# These mirror requirements.txt but use headless/CI-safe variants where
+# appropriate (e.g. opencv-python-headless avoids Qt/display dependencies
+# in headless CI environments).
 aiosqlite
 pydantic
 fastapi
+uvicorn
 python-dotenv
 cryptography
+numpy
+pillow
+opencv-python-headless
+pytesseract
+openai
+google-genai
+plyer
+scikit-learn
+joblib
+ultralytics
+watchdog
+mss

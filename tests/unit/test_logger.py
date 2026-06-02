@@ -18,10 +18,13 @@ def reset_logging():
 def test_setup_creates_handler():
     """Test that setup() attaches a StreamHandler to the root logger."""
     root = logging.getLogger()
-    assert len(root.handlers) == 0
-    
+    # pytest injects its own LogCaptureHandlers; exclude them from the count
+    # so we only assert on application-installed handlers.
+    app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+    assert len(app_handlers) == 0
+
     setup("INFO")
-    
+
     assert len(root.handlers) == 1
     assert isinstance(root.handlers[0], logging.StreamHandler)
 

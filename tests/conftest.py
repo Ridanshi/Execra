@@ -17,6 +17,16 @@ import pytest
 os.environ.setdefault("LLM_BACKEND", "llama")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
 
+# Generate a valid Fernet key once per process so every test that exercises
+# encryption paths has ENCRYPTION_KEY set before core.config is imported.
+# Keep this out of any real .env — it is test-only.
+try:
+    from cryptography.fernet import Fernet as _Fernet
+
+    os.environ.setdefault("ENCRYPTION_KEY", _Fernet.generate_key().decode())
+except ImportError:
+    pass
+
 try:
     import numpy as np
 

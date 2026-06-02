@@ -4,6 +4,16 @@ from datetime import datetime, timezone
 from core.models import GuidanceInstruction
 from core.hybrid.guidance_dispatcher import GuidanceDispatcher
 
+
+@pytest.fixture(autouse=True)
+def clear_alert_suppressor():
+    """Reset the module-level alert_suppressor before every test so suppression
+    state from a previous test cannot cause channels to be skipped."""
+    from core.hybrid.alert_suppressor import alert_suppressor
+    alert_suppressor._suppression_map.clear()
+    yield
+    alert_suppressor._suppression_map.clear()
+
 @pytest.fixture
 def instruction():
     return GuidanceInstruction(

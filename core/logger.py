@@ -60,6 +60,9 @@ def setup(
 
     root.setLevel(level)
 
+    for _uv_logger in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+        logging.getLogger(_uv_logger).setLevel(level)
+
 
 setup()
 logger = logging.getLogger("execra")

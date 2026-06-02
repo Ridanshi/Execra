@@ -3,8 +3,9 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import actions, context, mode, status, suppression
+from api.routes import actions, context, mode, plugins, status, suppression
 from api.websockets import guidance as ws_guidance
+from api.websockets import router as ws_router
 from core.config import settings
 from core.errors import handle_exception
 from core.hybrid.action_logger import action_logger
@@ -58,4 +59,6 @@ except Exception as e:
     handle_exception(e)
 
 app.include_router(ws_guidance.router)
+app.include_router(ws_router.router)
 app.include_router(suppression.router, prefix="/api/v1")
+app.include_router(plugins.router, prefix="/api/v1")

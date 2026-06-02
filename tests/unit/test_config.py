@@ -12,10 +12,12 @@ from dotenv import load_dotenv
 
 def test_settings_correct_defaults():
     """Test that Settings uses correct default values."""
-    # Import here to get a fresh instance with defaults
     from core.config import Settings
 
-    settings = Settings()
+    # conftest sets LLM_BACKEND=llama; patch it to empty so __post_init__
+    # skips the override and the dataclass default ("openai") is used.
+    with patch.dict(os.environ, {"LLM_BACKEND": ""}):
+        settings = Settings()
 
     # LLM Configuration
     assert settings.LLM_BACKEND == "openai"
@@ -127,9 +129,10 @@ def test_settings_missing_required_key_raises_error():
     with pytest.raises(ValueError, match="Missing required configuration"):
         settings.validate_required()
 
-    # Now set the keys and validation should pass
+    # Now set all required keys and validation should pass
     settings.OPENAI_API_KEY = "sk-test"
     settings.GEMINI_API_KEY = "gemini-test"
+    settings.ENCRYPTION_KEY = "test-encryption-key"
     settings.validate_required()  # Should not raise
 
 

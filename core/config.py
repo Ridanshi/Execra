@@ -65,6 +65,11 @@ class Settings:
     WS_RATE_LIMIT_WINDOW_S: int = 60
     WS_HEARTBEAT_INTERVAL_S: int = 30
 
+    # Trust Score Weights
+    TRUST_SCORE_W1: float = 0.5
+    TRUST_SCORE_W2: float = 0.3
+    TRUST_SCORE_W3: float = 0.2
+
     # Redis Configuration
     REDIS_URL: str = "redis://localhost:6379"
     REDIS_AUTH: Optional[str] = None
