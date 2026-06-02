@@ -91,23 +91,23 @@ class GeminiClient(BaseLLMClient):
             raise RuntimeError(f"Failed to authenticate: {e}")
 
     @retry(max_retries=3, base_delay=2)
-    async def complete(self, prompt: str) -> types.GenerateContentResponse:
-        messages = [{"role": "user", "parts": [{"text": prompt}]}]
+    async def complete(self, prompt: str) -> str:
+        content = types.Content(role="user", parts=[types.Part(text=prompt)])
         response = await self.__client.aio.models.generate_content(
-            model=self.__model, contents=messages
+            model=self.__model, contents=content
         )
-        return response
+        return response.text or ""
 
     @retry(max_retries=3, base_delay=2)
     async def stream(self, prompt: str) -> AsyncIterator[str]:
-        messages = [{"role": "user", "parts": [{"text": prompt}]}]
+        content = types.Content(role="user", parts=[types.Part(text=prompt)])
         stream = await self.__client.aio.models.generate_content_stream(
-            model=self.__model, contents=messages
+            model=self.__model, contents=content
         )
 
         async for chunk in stream:
-            if chunk:
-                yield chunk
+            if chunk and chunk.text:
+                yield chunk.text
 
     def extract_confidence(self, response: types.GenerateContentResponse) -> float:
         score_map = {
@@ -117,6 +117,8 @@ class GeminiClient(BaseLLMClient):
             "HIGH": 0.1,
             "HARM_PROBABILITY_UNSPECIFIED": 0.5,
         }
+        if not response.candidates:
+            return 0.5
         rating = getattr(response.candidates[0], "safety_ratings", [])
         if not rating:
             return 0.5

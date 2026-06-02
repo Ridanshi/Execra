@@ -201,6 +201,16 @@ class ScreenCapture:
         finally:
             shm.close()
 
+    @property
+    def thread(self) -> Optional[threading.Thread]:
+        """Return the active reader thread (mirrors the CameraFeed.thread API).
+
+        Maps to the internal ``_reader_thread`` that reads JPEG frames from
+        shared memory and enqueues them.  ``None`` until
+        :meth:`start_capture_loop` is called.
+        """
+        return self._reader_thread
+
     def stop(self) -> None:
         self._stop_event.set()
         self._stop_mp_event.set()
